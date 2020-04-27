@@ -13,3 +13,9 @@ This is no problem for `org-structtempl.el`. Just add the following snippet to y
     (add-to-list 'org-structtempl-alist '("m" "\\begin{align*}\n?\n\\end{align*}")))
 ```
 You can also customize `org-structtempl` instead.
+
+# Where is `org+-structtempl.el`?
+Note, that all features of `org+-structtempl.el` are now included in `org-structtempl.el`.
+So, `org+-structtempl.el` became obsolete and has been deleted.
+
+Please, replace `(require 'org+-structtempl)` by `(require 'org-structtempl)` in your init-file.
