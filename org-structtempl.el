@@ -52,7 +52,7 @@
     ("A" "#+ASCII: ")
     ("i" "#+INDEX: ?")
     ("I" "#+INCLUDE: %file ?")
-    ("m" org-structure-template-latex org-structure-template-latex))
+    ("m" org-structure-template-latex))
   "Structure completion elements.
 This is a list of abbreviation keys and values.  The value gets inserted
 if you type `<' followed by the key and then press the completion key,
@@ -63,7 +63,9 @@ of the `?' in the template."
   :type '(repeat
 	  (list
 	   (string :tag "Key")
-	   (string :tag "Template"))))
+	   (choice :tag "Template Source"
+	    (string :tag "Template String")
+	    (function :tag "Function")))))
 
 ;; Corrected version of `org-structure-template-at-point' from org+-structtempl.el:
 (defun org-structtempl-at-point (&optional point)
@@ -166,7 +168,8 @@ CELL is the matching entry in `org-structtempl-alist'."
 	     (delete-char 1)
 	     (set-marker pt-marker (point)))
 	   (goto-char start)
-	   (indent-to ind)
+	   (when (string-match "\n" rpl)
+	     (indent-to ind))
 	   (when (looking-at "[[:space:]]*#\\+\\(begin\\|BEGIN\\)_[[:alpha:]]+\\>")
 	     (goto-char (match-end 0))
 	     (insert header))
@@ -176,7 +179,8 @@ CELL is the matching entry in `org-structtempl-alist'."
 	     (forward-line)
 	     (delete-region (point) (line-end-position))
 	     (insert content))
-	   (goto-char pt-marker))
+	   (when (marker-position pt-marker)
+	     (goto-char pt-marker)))
       (set-marker end-marker nil)
       (set-marker pt-marker nil))))
 
