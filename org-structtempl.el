@@ -52,7 +52,7 @@
     ("A" "#+ASCII: ")
     ("i" "#+INDEX: ?")
     ("I" "#+INCLUDE: %file ?")
-    ("m" org-structure-template-latex))
+    ("m" org-structtempl-latex))
   "Structure completion elements.
 This is a list of abbreviation keys and values.  The value gets inserted
 if you type `<' followed by the key and then press the completion key,
@@ -121,7 +121,10 @@ The rest of the current line counts as sequence of header args.
 CELL is the matching entry in `org-structtempl-alist'."
   (let* (start
 	 (header (buffer-substring-no-properties (point) (line-end-position)))
-	 (rpl (nth 1 cell))
+	 (rpl (let ((rpl_ (nth 1 cell)))
+		(if (functionp rpl_)
+		    (funcall rpl_)
+		  rpl_)))
 	 (ind (current-indentation))
 	 (content (or
 		   (and (use-region-p)
@@ -160,7 +163,7 @@ CELL is the matching entry in `org-structtempl-alist'."
 	  (insert rpl)
 	  (set-marker end-marker (point))
 	  (forward-line 0)
-	  (indent-to ind)
+	  (indent-line-to ind)
 	  (forward-line)
 	  ;; It might be that the content contains a question mark.
 	  ;; Therefore we search for the position marker before we insert the contents.
@@ -187,24 +190,31 @@ CELL is the matching entry in `org-structtempl-alist'."
 (add-hook 'org-tab-after-check-for-cycling-hook #'org-structtempl-try-completion)
 
 
-(defvar-local org-LaTeX-default-environment "align*"
+(defvar-local org-structtempl-LaTeX-default-environment "align*"
   "Default environment for LaTeX snippets in org-mode.")
 
 (add-to-list 'org-highlight-latex-and-related 'latex)
 
 (defvar LaTeX-mode-hook) ;; defined in latex.el
-(defun org-structure-template-latex ()
+(defvar LaTeX-default-environment) ;; defined in latex.el
+
+(defun org-structtempl-latex ()
   "Return environment as string."
+  (require 'tex-site)
+  (require 'latex)
   (let* ((buf (or (buffer-file-name) "*org-latex-buffer*.tex"))
          (indent (current-indentation))
-         (env org-LaTeX-default-environment)
+         (env org-structtempl-LaTeX-default-environment)
          (ret
           (with-temp-buffer
             (let ((buffer-file-name buf)
+		  (font-lock-defaults (list nil t))
                   LaTeX-mode-hook) ;; avoid long hook functions
               (insert "\\documentclass{article}\n\\usepackage{amsmath,amsfonts}\n\\begin{document}\n\\end{document}")
               (beginning-of-line)
               (latex-mode)
+	      (tex-font-setup)
+	      (font-lock-set-defaults)
               (setq LaTeX-default-environment env)
               (LaTeX-environment nil)
               (setq env LaTeX-default-environment)
@@ -212,12 +222,12 @@ CELL is the matching entry in `org-structtempl-alist'."
               (goto-char (point-min))
               (search-forward "\\begin{document}\n")
               (delete-region (point-min) (point))
-              (search-forward "\\end{document}")
+              (search-forward "\n\\end{document}")
               (delete-region (match-beginning 0) (point-max))
               (goto-char (point-min)) (forward-line 1)
               (indent-rigidly (point) (point-max) indent)
               (buffer-string)))))
-    (setq org-LaTeX-default-environment env)
+    (setq org-structtempl-LaTeX-default-environment env)
     ret))
 
 (provide 'org-structtempl)
